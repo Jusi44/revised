@@ -1,0 +1,433 @@
+import time
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.shortcuts import render, redirect
+from django.views.decorators.http import require_POST
+from django.core.mail import send_mail
+
+
+EXERCISES = {
+    "Push-Up": {
+        "difficulty": "Medium",
+        "steps": [
+            "Start in a plank position with your arms straight.",
+            "Lower your body until your chest nearly touches the floor.",
+            "Push yourself back up to the starting position.",
+            "Repeat for desired reps."
+        ],
+        "image": "pushup.jpg"
+    },
+    "Squat": {
+        "difficulty": "Easy",
+        "steps": [
+            "Stand with feet shoulder-width apart.",
+            "Lower your body by bending your knees and pushing hips back.",
+            "Keep your chest up and knees behind toes.",
+            "Rise back to standing position.",
+            "Repeat for desired reps."
+        ],
+        "image": "squat.jpg"
+    },
+    "Plank": {
+        "difficulty": "Medium",
+        "steps": [
+            "Start on your forearms and toes, keeping your body straight.",
+            "Engage your core and hold the position.",
+            "Keep your hips from sagging or rising.",
+            "Hold for the desired duration."
+        ],
+        "image": "plank.jpg"
+    },
+    "Lunges": {
+        "difficulty": "Medium",
+        "steps": [
+            "Stand upright with feet hip-width apart.",
+            "Step forward with one leg and lower your hips until both knees are bent at 90 degrees.",
+            "Return to starting position.",
+            "Switch legs and repeat."
+        ],
+        "image": "lunges.jpg"
+    },
+    "Burpees": {
+        "difficulty": "Hard",
+        "steps": [
+            "Begin in a standing position.",
+            "Drop into a squat with your hands on the ground.",
+            "Kick your feet back into a plank position.",
+            "Perform a push-up.",
+            "Jump your feet back to squat position.",
+            "Jump up with arms extended overhead."
+        ],
+        "image": "burpees.jpg"
+    },
+    "Mountain Climbers": {
+        "difficulty": "Medium",
+        "steps": [
+            "Start in a plank position.",
+            "Drive one knee toward your chest.",
+            "Quickly switch legs, like running horizontally.",
+            "Maintain a steady pace."
+        ],
+        "image": "mountain_climbers.jpg"
+    },
+    "Handstand Hold": {
+        "difficulty": "Hard",
+        "steps": [
+            "Kick up into a handstand against a wall.",
+            "Engage your core and keep your body straight.",
+            "Hold the position as long as possible.",
+            "Carefully come down."
+        ],
+        "image": "handstand_hold.jpg"
+    },
+    "Dips": {
+        "difficulty": "Medium",
+        "steps": [
+            "Use parallel bars or a bench.",
+            "Lower your body by bending your elbows until your shoulders are below your elbows.",
+            "Push back up to the starting position.",
+            "Repeat for desired reps."
+        ],
+        "image": "dips.jpg"
+    },
+    "Jumping Jacks": {
+        "difficulty": "Easy",
+        "steps": [
+            "Stand upright with feet together and hands at your sides.",
+            "Jump your feet out and raise your arms overhead.",
+            "Jump feet back together and lower arms.",
+            "Repeat rapidly."
+        ],
+        "image": "jumping_jacks.jpg"
+    },
+    "Bicycle Crunches": {
+        "difficulty": "Medium",
+        "steps": [
+            "Lie on your back with hands behind your head.",
+            "Bring opposite elbow to knee while extending the other leg.",
+            "Alternate sides in a pedaling motion.",
+            "Repeat for desired reps."
+        ],
+        "image": "bicycle_crunches.jpg"
+    }
+}
+
+
+
+from .models import WorkoutSession
+
+from datetime import date, timedelta
+from .models import WorkoutSession, UserStreak
+
+@login_required
+def dashboard(request):
+    user = request.user
+    history = WorkoutSession.objects.filter(user=user).order_by('-completed_at')
+
+    # Calculate streak
+    try:
+        streak_obj = UserStreak.objects.get(user=user)
+        today = date.today()
+        if streak_obj.last_workout_date == today or streak_obj.last_workout_date == today - timedelta(days=1):
+            streak = streak_obj.current_streak
+        else:
+            streak = 0
+    except UserStreak.DoesNotExist:
+        streak = 0
+
+    # Current exercise handling
+    selected = request.session.get('selected_exercises', [])
+
+    # Safety check in case of out-of-sync data
+    if not isinstance(selected, list):
+        selected = []
+
+    if selected:
+        current_exercise = selected[0]  # Always show the first one as the "current"
+    else:
+        current_exercise = None
+    request.session['selected_exercises'] = []
+
+    request.session['current_exercise_index'] = 0  # Always reset to 0 since we're queueing
+
+    # Workout summary stats
+    total_workouts = history.count()
+    total_seconds = sum([session.duration_seconds for session in history])
+    total_minutes = total_seconds // 60
+    total_remainder_seconds = total_seconds % 60
+
+    def estimate_calories(duration_seconds):
+        MET = 6  # moderate intensity
+        weight_kg = 60  # replace with user's actual weight if available
+        return int(MET * 3.5 * weight_kg / 200 * duration_seconds)
+
+    total_calories = estimate_calories(total_seconds)
+
+    context = {
+        'user': user,
+        'history': history,
+        'streak': streak,
+        'selected_exercises': selected,
+        'current_exercise': current_exercise,
+        'total_workouts': total_workouts,
+        'total_minutes': total_minutes,
+        'total_remainder_seconds': total_remainder_seconds,
+        'total_calories': total_calories,
+    }
+    return render(request, 'workouts/dashboard.html', context)
+
+
+
+
+
+from .models import WorkoutSession, UserStreak
+from datetime import date, timedelta
+
+from .models import WorkoutSession
+
+from datetime import date, timedelta
+from .models import UserStreak
+from django.views.decorators.csrf import csrf_exempt
+
+@login_required
+@csrf_exempt
+def complete_workout(request):
+    if request.method == 'POST':
+        exercise_name = request.POST.get('exercise_name')
+        duration = request.POST.get('duration')
+
+        selected = request.session.get('selected_exercises', [])
+        current_index = request.session.get('current_exercise_index', 0)
+
+        # Prevent double submission
+        last_logged = request.session.get('last_logged_index')
+        if last_logged == current_index:
+            return JsonResponse({'status': 'duplicate'})
+
+        if exercise_name and duration:
+            duration_seconds = int(duration)
+            WorkoutSession.objects.create(
+                user=request.user,
+                exercise_name=exercise_name,
+                duration_seconds=duration_seconds,
+            )
+
+            request.session['last_logged_index'] = current_index  # mark this as logged
+
+            # Email logic
+            profile = getattr(request.user, 'profile', None)
+            recipient_email = profile.notify_email if profile else request.user.email
+            if recipient_email:
+                # Format the duration for the email
+                if duration_seconds < 60:
+                    duration_str = f"{duration_seconds} sec"
+                else:
+                    duration_minutes = duration_seconds // 60
+                    duration_remainder_seconds = duration_seconds % 60
+                    duration_str = f"{duration_minutes} minute" + ("s" if duration_minutes > 1 else "")
+                    if duration_remainder_seconds > 0:
+                        duration_str += f" and {duration_remainder_seconds} sec"
+
+                # Create a more detailed message
+                message = (
+                    f"Hi {request.user.username},\n\n"
+                    f"Congratulations on completing your workout! 🎉\n\n"
+                    f"You just finished {exercise_name} for {duration_str}. "
+                    f"Keep up the great work and stay consistent with your fitness journey!\n\n"
+                    f"Remember, every workout counts towards your goals. "
+                    f"Stay motivated and challenge yourself with each session!\n\n"
+                    f"Best,\n"
+                    f"Fitnotify Team"
+                )
+
+                send_mail(
+                    subject='Workout Completed!',
+                    message=message,
+                    from_email='Fitnotify <no-reply@fitnotify.com>',  # Set the sender's name and email
+                    recipient_list=[recipient_email],
+                    fail_silently=False,
+                )
+
+            # Advance to next exercise
+            if selected:
+                selected.pop(0)  # Remove the completed exercise
+                request.session['selected_exercises'] = selected
+
+            request.session['current_exercise_index'] = 0
+            request.session.pop('last_logged_index', None)
+
+            return JsonResponse({'status': 'success'})
+
+        return JsonResponse({'status': 'error', 'message': 'Missing data'}, status=400)
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)
+
+
+
+
+
+
+
+
+
+
+
+from django.shortcuts import render, redirect
+
+def exercise(request):
+    if request.method == 'POST':
+        selected = request.POST.getlist('selected_exercises')
+        request.session['selected_exercises'] = selected
+        return redirect('dashboard')
+
+    exercises = ["Push Up", "Plank", "Burpees", "Handstand"]  # Add more as needed
+    selected_exercises = request.session.get('selected_exercises', [])
+    return render(request, 'workouts/exercise.html', {
+        'exercises': exercises,
+        'selected_exercises': selected_exercises
+    })
+
+
+
+
+
+from django.shortcuts import render, redirect
+from .models import Exercise
+
+from django.shortcuts import redirect
+from workouts.models import Exercise
+from .models import WorkoutSession
+
+def start_workout(request):
+    selected_ids = request.session.get('selected_exercises', [])
+    selected_exercises = Exercise.objects.filter(id__in=selected_ids)
+
+    # Create a WorkoutSession or handle it however you like
+    workout = WorkoutSession.objects.create(
+        user=request.user,
+        # other fields like duration_minutes, etc.
+    )
+    workout.exercises.set(selected_exercises)
+
+    # ✅ Clear the selected exercises from the session to avoid duplication
+    request.session['selected_exercises'] = []
+
+    return redirect('dashboard')  # or wherever you show the workout
+
+
+def workout_session(request):
+    selected_exercises = request.session.get('selected_exercises', [])
+    current_index = request.session.get('current_exercise_index', 0)
+
+    if current_index >= len(selected_exercises):
+        # Finished all exercises
+        return redirect('workout_complete')
+
+    # Get current exercise
+    exercise_id = selected_exercises[current_index]
+    exercise = Exercise.objects.get(id=exercise_id)
+
+    return render(request, 'workout_session.html', {'exercise': exercise})
+
+def mark_exercise_done(request):
+    if request.method == 'POST':
+        current_index = request.session.get('current_exercise_index', 0)
+        request.session['current_exercise_index'] = current_index + 1
+    return redirect('workout_session')
+
+def workout_complete(request):
+    # Optionally clear session or reset state here
+    request.session.pop('current_exercise_index', None)
+    return render(request, 'workout_complete.html')
+
+
+
+
+
+from .models import Notification
+from .forms  import NotificationForm                # ← now matches
+
+from django.contrib.auth.decorators import login_required
+
+
+
+
+from django.shortcuts import render, redirect
+from .forms import NotificationForm
+
+
+# workouts/views.py
+
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.mail import send_mail
+from django.shortcuts import render, redirect
+
+from .forms import NotificationForm
+from .models import Notification
+
+@login_required
+def notification_settings(request):
+    # grab or build their Notification object
+    try:
+        notification = request.user.notification
+    except Notification.DoesNotExist:
+        notification = Notification(user=request.user)
+
+    if request.method == 'POST':
+        form = NotificationForm(request.POST, instance=notification)
+        if form.is_valid():
+            notif = form.save(commit=False)
+            notif.user = request.user
+            notif.save()
+            form.save_m2m()
+
+            # send a one-off test email
+            profile_email = getattr(request.user, 'profile', None) and request.user.profile.notify_email
+            if profile_email:
+                # Create a more detailed message
+                message = (
+                    f"Hi {request.user.username},\n\n"
+                    "⏰ It's time to workout!\n\n"
+                    "Your body will thank you for it. Let's get moving! 💪\n\n"
+                    "Remember, consistency is key to achieving your fitness goals. "
+                    "Every workout counts, and you're one step closer to a healthier you!\n\n"
+                    "Stay motivated and keep pushing your limits!\n\n"
+                    "Best,\n"
+                    "Fitnotify Team"
+                )
+
+                send_mail(
+                    subject="⏰ Time to workout!",
+                    message=message,
+                    from_email='Fitnotify <no-reply@fitnotify.com>',
+                    recipient_list=[profile_email],
+                    fail_silently=False,
+                )
+
+            messages.success(request, "Reminder saved—and a notification has been sent!")
+            return redirect('dashboard')
+
+    else:
+        form = NotificationForm(instance=notification)
+
+    return render(request, 'workouts/notification_form.html', {
+        'form': form,
+        'minute_steps': range(0, 60, 5),
+    })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

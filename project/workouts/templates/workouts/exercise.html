@@ -1,0 +1,401 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Select Exercises</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+    rel="stylesheet"
+  />
+  <style>
+    body {
+      background: #f8f9fa;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .exercise-card {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+      padding: 1rem;
+      height: 100%;
+    }
+    .exercise-card img {
+      width: 100%;
+      height: 280px;
+      object-fit: cover;
+      border-radius: 10px;
+    }
+    .exercise-card h5 {
+      margin-top: 0.75rem;
+    }
+    .notification-dropdown {
+      position: relative;
+      margin-left: 15px;
+    }
+    .notification-form-container {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 100%;
+      background: white;
+      border: 1px solid #ddd;
+      padding: 10px;
+      z-index: 1000;
+      width: max-content;
+    }
+  </style>
+</head>
+<body>
+  <nav
+    class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top"
+  >
+    <div class="container">
+      <a class="navbar-brand text-primary fw-bold" href="{% url 'dashboard' %}">
+        <i class="bi bi-barbell me-1"></i> FitNotify
+      </a>
+      <button
+        class="navbar-toggler"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#navbarContent"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse justify-content-end" id="navbarContent">
+        <ul class="navbar-nav align-items-center gap-2">
+          <li class="nav-item">
+            <a
+              class="nav-link text-primary fw-semibold {% if request.path == '/dashboard/' %}active{% endif %}"
+              href="{% url 'dashboard' %}"
+              >Dashboard</a
+            >
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link text-primary fw-semibold {% if request.path == '/exercise/' %}active{% endif %}"
+              href="{% url 'exercise' %}"
+              >Exercise</a
+            >
+          </li>
+
+          <!-- Notification bell -->
+          <li class="nav-item">
+            <div class="dropdown me-3">
+              <button
+                class="btn btn-light dropdown-toggle"
+                type="button"
+                id="dropdownBell"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                🔔
+              </button>
+              <ul class="dropdown-menu" aria-labelledby="dropdownBell">
+                <li>
+                  <a class="dropdown-item" href="{% url 'notification_settings' %}"
+                    >Set Workout Notification</a
+                  >
+                </li>
+              </ul>
+            </div>
+          </li>
+
+          {% if user.is_authenticated %}
+          <li class="nav-item dropdown">
+            <a
+              class="nav-link dropdown-toggle text-primary fw-semibold"
+              href="#"
+              role="button"
+              data-bs-toggle="dropdown"
+            >
+              <i class="bi bi-person-circle me-1"></i>{{ user.username }}
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="{% url 'profile' %}">Profile</a></li>
+              <li><hr class="dropdown-divider" /></li>
+              <li>
+                <form method="post" action="{% url 'logout' %}">
+                  {% csrf_token %}
+                  <button type="submit" class="dropdown-item text-danger">
+                    <i class="bi bi-box-arrow-right me-1"></i> Logout
+                  </button>
+                </form>
+              </li>
+            </ul>
+          </li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container my-5">
+    <h3 class="text-primary fw-bold mb-4">
+      <i class="bi bi-list-task me-2"></i>Select Exercises
+    </h3>
+    <form method="post">
+      {% csrf_token %}
+      <div class="row g-4">
+
+  <div class="col-md-6 col-lg-4">
+    <div class="exercise-card">
+      <img src="https://static.vecteezy.com/system/resources/previews/000/162/135/original/push-up-pose-vector.jpg" alt="Push Up" />
+      <h5 class="mt-3">Push Up</h5>
+      <p><strong>Steps:</strong> Lower your body, then push back up. Keep core tight.</p>
+      <p><strong>Sets & Reps:</strong> 3 sets 10-15 reps</p>
+      <p><strong>Difficulty:</strong> Beginner</p>
+      <div class="form-check mt-3">
+    <input class="form-check-input" type="checkbox" name="selected_exercises" value="Push Up" id="exercise-push-up" />
+    <input type="hidden" name="exercise_image_Push_Up" value="https://static.vecteezy.com/system/resources/previews/000/162/135/original/push-up-pose-vector.jpg" />
+    <input type="hidden" name="exercise_steps_Push_Up" value="Lower your body, then push back up. Keep core tight." />
+    <input type="hidden" name="exercise_reps_Push_Up" value="3 sets 10-15 reps" />
+    <label class="form-check-label" for="exercise-push-up">Select</label>
+</div>
+
+    </div>
+  </div>
+
+  <div class="col-md-6 col-lg-4">
+    <div class="exercise-card">
+      <img src="https://i.pinimg.com/originals/bb/93/89/bb9389b7be696161406c9ffe36ca2762.jpg" alt="Plank" />
+      <h5 class="mt-3">Plank</h5>
+      <p><strong>Steps:</strong> Hold a straight line from shoulders to feet.</p>
+      <p><strong>Sets & Reps:</strong> 3 sets of Hold for 30-60 seconds</p>
+      <p><strong>Difficulty:</strong> Beginner</p>
+      <div class="form-check mt-3">
+        <input class="form-check-input" type="checkbox" name="selected_exercises" value="Plank" id="exercise-plank" />
+        <label class="form-check-label" for="exercise-plank">Select</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-lg-4">
+    <div class="exercise-card">
+      <img src="https://cdn5.vectorstock.com/i/1000x1000/38/04/man-doing-squat-thrust-burpee-vector-34493804.jpg" alt="Burpees" />
+      <h5 class="mt-3">Burpees</h5>
+      <p><strong>Steps:</strong> Squat, jump to plank, push up, jump and reach up.</p>
+      <p><strong>Sets & Reps:</strong> 3 sets of 8-12 reps</p>
+      <p><strong>Difficulty:</strong> Intermediate</p>
+      <div class="form-check mt-3">
+        <input class="form-check-input" type="checkbox" name="selected_exercises" value="Burpees" id="exercise-burpees" />
+        <label class="form-check-label" for="exercise-burpees">Select</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-lg-4">
+    <div class="exercise-card">
+      <img src="https://static.vecteezy.com/system/resources/previews/016/120/516/non_2x/man-doing-handstand-push-up-exercise-flat-illustration-isolated-on-white-background-vector.jpg" alt="Handstand" />
+      <h5 class="mt-3">Handstand</h5>
+      <p><strong>Steps:</strong> Kick up to wall, hold with locked arms and engaged core.</p>
+      <p><strong>Sets & Reps:</strong> 2 sets of Hold for 10-30 seconds</p>
+      <p><strong>Difficulty:</strong> Advanced</p>
+      <div class="form-check mt-3">
+        <input class="form-check-input" type="checkbox" name="selected_exercises" value="Handstand" id="exercise-handstand" />
+        <label class="form-check-label" for="exercise-handstand">Select</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-lg-4">
+    <div class="exercise-card">
+      <img src="https://www.shutterstock.com/shutterstock/photos/2081735731/display_1500/stock-vector-exercise-guide-by-man-doing-air-squat-in-steps-in-side-view-illustration-about-workout-position-2081735731.jpg" alt="Squat" />
+      <h5 class="mt-3">Squat</h5>
+      <p><strong>Steps:</strong> Stand with feet shoulder-width apart, bend knees and lower hips, then stand back up.</p>
+      <p><strong>Sets & Reps:</strong> 3 sets of 15-20 reps</p>
+      <p><strong>Difficulty:</strong> Beginner</p>
+      <div class="form-check mt-3">
+        <input class="form-check-input" type="checkbox" name="selected_exercises" value="Squat" id="exercise-squat" />
+        <label class="form-check-label" for="exercise-squat">Select</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-lg-4">
+    <div class="exercise-card">
+      <img src="https://thumbs.dreamstime.com/b/basic-rgb-235613164.jpg" alt="Lunges" />
+      <h5 class="mt-3">Lunges</h5>
+      <p><strong>Steps:</strong> Step forward, bend both knees, keep torso upright, then step back.</p>
+      <p><strong>Sets & Reps:</strong> 2 - 3 sets of 10-12 reps per leg</p>
+      <p><strong>Difficulty:</strong> Intermediate</p>
+      <div class="form-check mt-3">
+        <input class="form-check-input" type="checkbox" name="selected_exercises" value="Lunges" id="exercise-lunges" />
+        <label class="form-check-label" for="exercise-lunges">Select</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-lg-4">
+    <div class="exercise-card">
+      <img src="https://cdn.mos.cms.futurecdn.net/PTedSPRsVdpujUm3hvhPa6.jpg" alt="Mountain Climbers" />
+      <h5 class="mt-3">Mountain Climbers</h5>
+      <p><strong>Steps:</strong> In plank, bring knees alternately toward chest quickly.</p>
+      <p><strong>Sets & Reps:</strong> 3 sets of 20-30 seconds</p>
+      <p><strong>Difficulty:</strong> Intermediate</p>
+      <div class="form-check mt-3">
+        <input class="form-check-input" type="checkbox" name="selected_exercises" value="Mountain Climbers" id="exercise-mountain-climbers" />
+        <label class="form-check-label" for="exercise-mountain-climbers">Select</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-lg-4">
+    <div class="exercise-card">
+      <img src="https://th.bing.com/th/id/R.c7aed4f80f608c4852aea9c492d8360a?rik=B7u%2fu7ONxarfrA&riu=http%3a%2f%2fwww.spotebi.com%2fwp-content%2fuploads%2f2014%2f10%2fjumping-jacks-exercise-illustration.jpg%3fb78ef6&ehk=BmKhL%2fvJpEkXtaaiA9pRwQIgHgRpH7eP7eJxc4Orl2I%3d&risl=&pid=ImgRaw&r=0" alt="Jumping Jacks" />
+      <h5 class="mt-3">Jumping Jacks</h5>
+      <p><strong>Steps:</strong> Jump legs apart while raising arms, then jump back.</p>
+      <p><strong>Sets & Reps:</strong> 2 - 3 sets of 30-50 reps</p>
+      <p><strong>Difficulty:</strong> Beginner</p>
+      <div class="form-check mt-3">
+        <input class="form-check-input" type="checkbox" name="selected_exercises" value="Jumping Jacks" id="exercise-jumping-jacks" />
+        <label class="form-check-label" for="exercise-jumping-jacks">Select</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-lg-4">
+    <div class="exercise-card">
+      <img src="https://th.bing.com/th/id/OIP.hPV01yNRlIAohIZfTs2TMAAAAA?cb=iwp2&rs=1&pid=ImgDetMain" alt="Sit Ups" />
+      <h5 class="mt-3">Sit Ups</h5>
+      <p><strong>Steps:</strong> Lie on back, curl upper body towards knees, then lower down.</p>
+      <p><strong>Sets & Reps:</strong> 3 sets of 15-20 reps</p>
+      <p><strong>Difficulty:</strong> Beginner</p>
+      <div class="form-check mt-3">
+        <input class="form-check-input" type="checkbox" name="selected_exercises" value="Sit Ups" id="exercise-sit-ups" />
+        <label class="form-check-label" for="exercise-sit-ups">Select</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-lg-4">
+    <div class="exercise-card">
+      <img src="https://cdn5.vectorstock.com/i/1000x1000/63/99/bench-dip-exercise-strength-workout-vector-37316399.jpg" alt="Dips" />
+      <h5 class="mt-3">Dips</h5>
+      <p><strong>Steps:</strong> Lower body between bars by bending elbows, then push up.</p>
+      <p><strong>Sets & Reps:</strong> 3 sets of 8-12 reps</p>
+      <p><strong>Difficulty:</strong> Intermediate</p>
+      <div class="form-check mt-3">
+        <input class="form-check-input" type="checkbox" name="selected_exercises" value="Dips" id="exercise-dips" />
+        <label class="form-check-label" for="exercise-dips">Select</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-lg-4">
+  <div class="exercise-card">
+    <img src="https://static.vecteezy.com/system/resources/previews/008/573/011/original/man-doing-diamond-push-up-exercise-for-tricep-and-chest-flat-illustration-isolated-on-white-background-vector.jpg" alt="Diamond Push Up" />
+    <h5 class="mt-3">Diamond Push Up</h5>
+    <p><strong>Steps:</strong> Place hands close together under chest forming a diamond, lower and push up.</p>
+    <p><strong>Sets & Reps:</strong> 2 - 3 sets of 8-12 reps</p>
+    <p><strong>Difficulty:</strong> Intermediate</p>
+    <div class="form-check mt-3">
+      <input class="form-check-input" type="checkbox" name="selected_exercises" value="Diamond Push Up" id="exercise-diamond-push-up" />
+      <label class="form-check-label" for="exercise-diamond-push-up">Select</label>
+    </div>
+  </div>
+</div>
+
+<div class="col-md-6 col-lg-4">
+  <div class="exercise-card">
+    <img src="https://th.bing.com/th/id/OIP.-KKBFrymiIIsMyTx_zmgEAHaFh?o=7&cb=iwp2rm=3&rs=1&pid=ImgDetMain" alt="Archer Push Up" />
+    <h5 class="mt-3">Archer Push Up</h5>
+    <p><strong>Steps:</strong> Wide push up, shift body weight side to side like drawing a bow.</p>
+    <p><strong>Sets & Reps:</strong> 2 - 3 Sets of 6-10 reps per side</p>
+    <p><strong>Difficulty:</strong> Advanced</p>
+    <div class="form-check mt-3">
+      <input class="form-check-input" type="checkbox" name="selected_exercises" value="Archer Push Up" id="exercise-archer-push-up" />
+      <label class="form-check-label" for="exercise-archer-push-up">Select</label>
+    </div>
+  </div>
+</div>
+
+<div class="col-md-6 col-lg-4">
+  <div class="exercise-card">
+    <img src="https://static.vecteezy.com/system/resources/previews/027/439/552/original/man-doing-pike-push-up-exercise-flat-illustration-isolated-on-white-background-vector.jpg" alt="Pike Push Up" />
+    <h5 class="mt-3">Pike Push Up</h5>
+    <p><strong>Steps:</strong> From downward dog position, bend elbows and lower head towards floor, push back up.</p>
+    <p><strong>Sets & Reps:</strong> 3 sets of 8-12 reps</p>
+    <p><strong>Difficulty:</strong> Intermediate</p>
+    <div class="form-check mt-3">
+      <input class="form-check-input" type="checkbox" name="selected_exercises" value="Pike Push Up" id="exercise-pike-push-up" />
+      <label class="form-check-label" for="exercise-pike-push-up">Select</label>
+    </div>
+  </div>
+</div>
+
+<div class="col-md-6 col-lg-4">
+  <div class="exercise-card">
+    <img src="https://thumbs.dreamstime.com/b/art-illustration-201076249.jpg" alt="Leg Raises" />
+    <h5 class="mt-3">Leg Raises</h5>
+    <p><strong>Steps:</strong> Lie on back, lift legs straight up and lower without touching floor.</p>
+    <p><strong>Sets & Reps:</strong> 3 sets of 15-20 reps</p>
+    <p><strong>Difficulty:</strong> Intermediate</p>
+    <div class="form-check mt-3">
+      <input class="form-check-input" type="checkbox" name="selected_exercises" value="Leg Raises" id="exercise-leg-raises" />
+      <label class="form-check-label" for="exercise-leg-raises">Select</label>
+    </div>
+  </div>
+</div>
+
+<div class="col-md-6 col-lg-4">
+  <div class="exercise-card">
+    <img src="https://thumbs.dreamstime.com/z/man-doing-hip-raises-butt-lift-bridges-exercise-man-doing-hip-raises-butt-lift-bridges-exercise-flat-vector-illustration-isolated-221029673.jpg" alt="Glute Bridge" />
+    <h5 class="mt-3">Glute Bridge</h5>
+    <p><strong>Steps:</strong> Lie on back, bend knees, lift hips up squeezing glutes, then lower down.</p>
+    <p><strong>Sets & Reps:</strong> 3 sets of 15-20 reps</p>
+    <p><strong>Difficulty:</strong> Beginner</p>
+    <div class="form-check mt-3">
+      <input class="form-check-input" type="checkbox" name="selected_exercises" value="Glute Bridge" id="exercise-glute-bridge" />
+      <label class="form-check-label" for="exercise-glute-bridge">Select</label>
+    </div>
+  </div>
+</div>
+
+<div class="col-md-6 col-lg-4">
+  <div class="exercise-card">
+    <img src="https://static.vecteezy.com/system/resources/previews/024/311/251/non_2x/man-doing-knee-to-box-jump-squat-or-power-jump-exercise-vector.jpg" alt="Box Jumps" />
+    <h5 class="mt-3">Box Jumps</h5>
+    <p><strong>Steps:</strong> Jump onto a sturdy elevated platform and step down carefully.</p>
+    <p><strong>Sets & Reps:</strong> 3 Sets of 10-15 reps</p>
+    <p><strong>Difficulty:</strong> Advanced</p>
+    <div class="form-check mt-3">
+      <input class="form-check-input" type="checkbox" name="selected_exercises" value="Box Jumps" id="exercise-box-jumps" />
+      <label class="form-check-label" for="exercise-box-jumps">Select</label>
+    </div>
+  </div>
+</div>
+
+
+</div>
+
+
+             
+
+           
+              <label class="form-check-label" for="exercise-{{ forloop.counter }}">
+              </label>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="text-center mt-4">
+        <button type="submit" class="btn btn-primary btn-lg">
+          <i class="bi bi-save me-1"></i> Save Selection
+        </button>
+      </div>
+    </form>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

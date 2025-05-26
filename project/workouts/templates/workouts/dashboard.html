@@ -1,0 +1,603 @@
+{% load static %}
+{% load widget_tweaks %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FitNotify</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+  <style>
+    body {
+      background: #f8f9fa;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .navbar-brand {
+      font-weight: 700;
+      color: #0d6efd;
+    }
+    #timer {
+      font-size: 3rem;
+      font-weight: 600;
+      color: #0d6efd;
+    }
+    .status-message {
+      font-weight: 600;
+    }
+    .status-message.workout {
+      color: #0d6efd;
+    }
+    .status-message.resting {
+      color: #6c757d;
+    }
+    .badge-streak {
+      background-color: #0d6efd;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
+  <div class="container">
+    <a class="navbar-brand" href="{% url 'dashboard' %}">
+      <i class="bi bi-barbell"></i> FitNotify
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+      aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+      <ul class="navbar-nav align-items-center me-3">
+        <li class="nav-item">
+          <a class="nav-link {% if request.path == '/dashboard/' %}active{% endif %} text-primary fw-semibold"
+            href="{% url 'dashboard' %}">Dashboard</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.path == '/exercise/' %}active{% endif %} text-primary fw-semibold"
+            href="{% url 'exercise' %}">Exercise</a>
+        </li>
+      </ul>
+
+      <div class="dropdown me-3">
+        <button class="btn btn-light dropdown-toggle" type="button" id="dropdownBell" data-bs-toggle="dropdown"
+          aria-expanded="false">
+          🔔
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="dropdownBell">
+          <li><a class="dropdown-item" href="{% url 'notification_settings' %}">Set Workout Notification</a></li>
+        </ul>
+      </div>
+
+      {% if user.is_authenticated %}
+      <div class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle text-primary fw-semibold" href="#" role="button" data-bs-toggle="dropdown"
+          aria-expanded="false">
+          <i class="bi bi-person-circle"></i> {{ user.username }}
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><a class="dropdown-item" href="{% url 'profile' %}">Profile</a></li>
+          <li>
+            <form method="post" action="{% url 'logout' %}">
+              {% csrf_token %}
+              <button type="submit" class="dropdown-item text-danger">
+                <i class="bi bi-box-arrow-right"></i> Logout
+              </button>
+            </form>
+          </li>
+        </ul>
+      </div>
+      {% else %}
+      <a class="nav-link text-primary" href="{% url 'login' %}">Login</a>
+      <a class="nav-link text-primary" href="{% url 'register' %}">Register</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+        {% if user.is_authenticated %}
+    
+          <!-- templates/workouts/dashboard.html -->
+
+
+    
+
+          <ul class="dropdown-menu dropdown-menu-end">
+  <li><a class="dropdown-item" href="{% url 'profile' %}">Profile</a></li>
+
+              <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="dropdown-item text-danger">
+                  <i class="bi bi-box-arrow-right"></i> Logout
+                </button>
+              </form>
+            </li>
+          </ul>
+        </li>
+        {% else %}
+        <li class="nav-item"><a class="nav-link text-primary" href="{% url 'login' %}">Login</a></li>
+        <li class="nav-item"><a class="nav-link text-primary" href="{% url 'register' %}">Register</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>
+
+
+
+<div class="container my-5">
+
+
+
+
+  <div class="row g-4">
+
+    <div class="container mt-4">
+    <div class="row text-white">
+        <div class="col-md-3 mb-3">
+            <div class="card bg-primary shadow rounded-4 text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Workouts</h5>
+                    <h2>{{ total_workouts }}</h2>
+                    <p class="mb-0">Total Completed</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+    <div class="card bg-success shadow rounded-4 text-center">
+        <div class="card-body">
+            <h5 class="card-title">Total Workout Time</h5>
+            <h2>{{ total_minutes }} min {{ total_remainder_seconds }} sec</h2>
+            <p class="mb-0">Total Workout Time</p>
+        </div>
+    </div>
+</div>
+
+        <div class="col-md-3 mb-3">
+    <div class="card bg-warning shadow rounded-4 text-center">
+        <div class="card-body">
+            <h5 class="card-title">Calories</h5>
+            <h2>{{ total_calories }}</h2>
+            <p class="mb-0">Total Calories Burned</p>
+        </div>
+    </div>
+</div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card bg-danger shadow rounded-4 text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Streak</h5>
+                    <h2>1</h2>
+                    <p class="mb-0">Day Streak</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+    <!-- Workout History -->
+    <div class="col-lg-5">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i> Workout History</h5>
+          <span class="badge badge-streak fs-6 rounded-pill">
+              🔥 1 day streak
+          </span>
+        </div>
+       <ul class="list-group" id="history-list">
+  {% for workout in history %}
+  <li class="list-group-item d-flex justify-content-between align-items-center">
+    <span>
+      <i class="bi bi-check2-circle text-primary me-2"></i>
+      {{ workout.exercise_name }}
+    </span>
+    <span class="badge bg-primary rounded-pill">
+      {{ workout.duration_str }}
+    </span>
+  </li>
+{% empty %}
+  <li class="list-group-item">No workouts done yet.</li>
+{% endfor %}
+
+
+</ul>
+
+
+
+      </div>
+    </div>
+
+    <!-- Current Workout -->
+    <div class="col-lg-7">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="bi bi-activity me-2"></i> Current Workout</h5>
+        </div>
+        <div class="card-body">
+
+          <div class="mb-4">
+            <label for="current-exercise-name" class="form-label fw-bold text-primary">Exercise</label>
+            <h4 id="current-exercise-name" class="text-primary">
+              {% if current_exercise %}{{ current_exercise }}{% else %}<span class="text-muted">No exercise selected</span>{% endif %}
+            </h4>
+          </div>
+
+          <div class="mb-4">
+            <label for="duration" class="form-label fw-semibold">Duration (minutes)</label>
+            <input
+              type="number"
+              id="duration"
+              class="form-control"
+              value="5"
+              min="1"
+            />
+          </div>
+
+          <div class="text-center mb-4">
+            <p id="timer" class="display-1">00:00</p>
+            <p id="status-message" class="status-message"></p>
+          </div>
+
+          <div class="d-flex justify-content-center gap-3 flex-wrap">
+            <button id="start-btn" class="btn btn-primary btn-lg" onclick="startWorkout()">
+              <i class="bi bi-play-fill me-1"></i> Start
+            </button>
+            <button id="done-btn" class="btn btn-primary btn-lg" onclick="donePressed()" style="display:none;">
+              <i class="bi bi-check-lg me-1"></i> Done
+            </button>
+            <button id="pause-btn" class="btn btn-outline-primary btn-lg" onclick="pauseResumeWorkout()" style="display:none;">
+              <i class="bi bi-pause-fill me-1"></i> Pause
+            </button>
+            <button id="stop-btn" class="btn btn-outline-danger btn-lg" onclick="stopWorkout()" style="display:none;">
+              <i class="bi bi-stop-fill me-1"></i> Stop
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="card shadow-sm mt-4">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0"><i class="bi bi-list-check me-2"></i> Selected Exercises</h5>
+        </div>
+        <ul class="list-group list-group-flush" id="selected-list" style="max-height: 180px; overflow-y:auto;">
+          {% for exercise in selected_exercises %}
+          <li class="list-group-item">{{ exercise }}</li>
+          {% empty %}
+          <li class="list-group-item text-muted">No exercises selected.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+
+
+  
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+let timer = null;
+let seconds = 0;
+let paused = false;
+let resting = false;
+let workoutStarted = false;
+let startTimestamp = null;
+
+function updateTimer() {
+    if (paused) return;
+
+    let mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+    let secs = (seconds % 60).toString().padStart(2, '0');
+    document.getElementById('timer').innerText = `${mins}:${secs}`;
+
+    if (seconds > 0) {
+        seconds--;
+        timer = setTimeout(updateTimer, 1000);
+    } else {
+        if (!resting) {
+            document.getElementById('status-message').innerText = "Time's up! Press Done when you're finished.";
+            document.getElementById('status-message').className = 'status-message workout';
+        } else {
+            document.getElementById('status-message').innerText = "Rest time over! Press Done to start next exercise.";
+            document.getElementById('status-message').className = 'status-message resting';
+        }
+    }
+}
+
+document.getElementById('profile-btn').addEventListener('click', function() {
+  const formContainer = document.getElementById('profile-form-container');
+  if (formContainer.style.display === 'none' || formContainer.style.display === '') {
+    formContainer.style.display = 'block';
+  } else {
+    formContainer.style.display = 'none';
+  }
+});
+
+document.getElementById('cancel-profile-btn').addEventListener('click', function() {
+  document.getElementById('profile-form-container').style.display = 'none';
+});
+
+
+function startTimer(duration) {
+    clearTimeout(timer);
+    seconds = duration * 60;
+    updateTimer();
+}
+
+function startWorkout() {
+    const currentExerciseEl = document.getElementById('current-exercise-name');
+    const currentExercise = currentExerciseEl.innerText.trim();
+    
+    if (!currentExercise || currentExercise === 'No exercise selected') {
+        alert("Please select a workout before starting.");
+        return;
+    }
+
+    // Remove the current exercise from the selected list immediately
+    removeExerciseFromSelected(currentExercise);
+
+    workoutStarted = true;
+    resting = false;
+    paused = false;
+
+    document.getElementById('start-btn').style.display = 'none';
+    document.getElementById('done-btn').style.display = 'inline-block';
+    document.getElementById('pause-btn').style.display = 'inline-block';
+    document.getElementById('stop-btn').style.display = 'inline-block';
+
+    const duration = parseInt(document.getElementById('duration').value) || 5;
+    document.getElementById('status-message').innerText = "Workout in progress...";
+    document.getElementById('status-message').className = 'status-message workout';
+
+    startTimestamp = Date.now();
+    startTimer(duration);
+}
+
+
+
+
+
+
+
+function pauseResumeWorkout() {
+    if (!workoutStarted) return;
+
+    paused = !paused;
+
+    const pauseBtn = document.getElementById('pause-btn');
+    if (paused) {
+        pauseBtn.innerHTML = '<i class="bi bi-play-fill me-1"></i> Resume';
+        document.getElementById('status-message').innerText = "Paused";
+    } else {
+        pauseBtn.innerHTML = '<i class="bi bi-pause-fill me-1"></i> Pause';
+        if (resting) {
+            document.getElementById('status-message').innerText = "Resting...";
+            document.getElementById('status-message').className = 'status-message resting';
+        } else {
+            document.getElementById('status-message').innerText = "Workout in progress...";
+            document.getElementById('status-message').className = 'status-message workout';
+        }
+        updateTimer();
+    }
+}
+
+function stopWorkout() {
+    clearTimeout(timer);
+    workoutStarted = false;
+    resting = false;
+    paused = false;
+    seconds = 0;
+
+    document.getElementById('timer').innerText = '00:00';
+    document.getElementById('status-message').innerText = '';
+    document.getElementById('start-btn').style.display = 'inline-block';
+    document.getElementById('done-btn').style.display = 'none';
+    document.getElementById('pause-btn').style.display = 'none';
+    document.getElementById('stop-btn').style.display = 'none';
+    document.getElementById('pause-btn').innerHTML = '<i class="bi bi-pause-fill me-1"></i> Pause';
+}
+
+
+function saveAndEmailWorkout(elapsedSeconds) {
+    const exerciseName = document.getElementById('current-exercise-name').innerText.trim();
+    fetch("{% url 'complete_workout' %}", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': '{{ csrf_token }}',
+      },
+      body: new URLSearchParams({
+        exercise_name: exerciseName,
+        duration: elapsedSeconds
+      })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.status !== 'success') {
+        alert('Failed to save workout history.');
+      } else {
+        moveExerciseToHistory(exerciseName, elapsedSeconds);
+        removeExerciseFromSelected(exerciseName);
+      }
+    })
+    .catch(() => alert('Error saving workout history.'));
+  }
+
+function donePressed() {
+    clearTimeout(timer);
+
+    const currentExerciseEl = document.getElementById('current-exercise-name');
+    const currentExercise = currentExerciseEl.innerText.trim();
+
+    if (!resting) {
+        // Workout just finished
+        const elapsedSeconds = Math.floor((Date.now() - startTimestamp) / 1000);
+        saveAndEmailWorkout(elapsedSeconds);
+
+        // Start rest period
+        resting = true;
+        paused = false;
+        seconds = 60;  // Force 1 minute directly
+        updateTimer();
+        document.getElementById('status-message').innerText = "Resting…";
+        document.getElementById('status-message').className = 'status-message resting';
+        return;
+    }
+
+    // If already resting, move to next exercise
+    resting = false;
+    paused = false;
+
+    const nextExercise = getNextSelectedExercise();
+
+    if (nextExercise) {
+        currentExerciseEl.innerText = nextExercise;
+        document.getElementById('status-message').innerText = 'Next exercise ready. Press Start to begin.';
+        document.getElementById('status-message').className = 'status-message workout';
+
+        // Show the start button for the next exercise
+        document.getElementById('start-btn').style.display = 'inline-block';
+        document.getElementById('done-btn').style.display = 'none';
+        document.getElementById('pause-btn').style.display = 'none';
+        document.getElementById('stop-btn').style.display = 'none';
+        document.getElementById('timer').innerText = '00:00';
+    } else {
+        // No more exercises
+        currentExerciseEl.innerText = 'No exercise selected';
+        document.getElementById('status-message').innerText = 'Workout complete!';
+        document.getElementById('start-btn').style.display = 'inline-block';
+        document.getElementById('start-btn').disabled = true;
+        document.getElementById('done-btn').style.display = 'none';
+        document.getElementById('pause-btn').style.display = 'none';
+        document.getElementById('stop-btn').style.display = 'none';
+        document.getElementById('timer').innerText = '00:00';
+    }
+}
+
+
+
+   removeExerciseFromSelected(exerciseName);
+  const nextExercise = getNextSelectedExercise();
+
+
+    if (nextExercise) {
+      currentExerciseEl.innerText = nextExercise;
+      document.getElementById('status-message').innerText = 'Exercise in progress...';
+      document.getElementById('status-message').className = 'status-message workout';
+
+      document.getElementById('start-btn').style.display = 'none';
+      document.getElementById('pause-btn').style.display = 'inline-block';
+      document.getElementById('stop-btn').style.display = 'inline-block';
+      document.getElementById('done-btn').style.display = 'inline-block';
+
+      const minutes = parseInt(document.getElementById('duration').value);
+      seconds = minutes * 60;
+      startTimer(minutes);
+    } else {
+      currentExerciseEl.innerText = 'No exercise selected';
+      document.getElementById('status-message').innerText = 'Workout complete!';
+      document.getElementById('start-btn').style.display = 'inline-block';
+      document.getElementById('start-btn').disabled = true;
+      document.getElementById('done-btn').style.display = 'none';
+      document.getElementById('pause-btn').style.display = 'none';
+      document.getElementById('stop-btn').style.display = 'none';
+      document.getElementById('timer').innerText = '00:00';
+    }
+  
+
+
+
+
+function moveExerciseToHistory(exerciseName, seconds) {
+    const historyList = document.getElementById('history-list');
+    const placeholder = historyList.querySelector('li.text-muted');
+    if (placeholder) historyList.removeChild(placeholder);
+
+    const li = document.createElement('li');
+    li.className = 'list-group-item d-flex justify-content-between align-items-center';
+
+    const spanName = document.createElement('span');
+    spanName.innerHTML = `<i class="bi bi-check2-circle text-primary me-2"></i> ${exerciseName}`;
+
+    const spanDuration = document.createElement('span');
+    spanDuration.className = 'badge bg-primary rounded-pill';
+
+    // Correctly format the duration
+    if (seconds < 60) {
+        spanDuration.innerText = seconds + ' sec';
+    } else {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        spanDuration.innerText = m + ' min' + (s > 0 ? ' ' + s + ' sec' : '');
+    }
+
+    li.appendChild(spanName);
+    li.appendChild(spanDuration);
+
+    historyList.insertBefore(li, historyList.firstChild);
+}
+
+
+function removeExerciseFromSelected(exerciseName) {
+    const selectedList = document.getElementById('selected-list');
+    const items = Array.from(selectedList.children);
+
+    for (let li of items) {
+        if (li.innerText.trim() === exerciseName) {
+            selectedList.removeChild(li);
+            break; // Exit the loop after removing the exercise
+        }
+    }
+
+    // If no items left, show placeholder text
+    if (selectedList.children.length === 0) {
+        selectedList.innerHTML = '<li class="list-group-item text-muted">No exercises selected.</li>';
+    }
+}
+
+
+
+function getNextSelectedExercise() {
+    const selectedList = document.getElementById('selected-list');
+    const items = selectedList.querySelectorAll('li');
+
+    if (items.length === 0) return null;
+
+    // If the placeholder text is present, return null
+    if (items.length === 1 && items[0].classList.contains('text-muted')) return null;
+
+    return items[0].innerText.trim();
+}
+ 
+
+
+
+
+
+// Disable start button if no exercise selected at load
+window.onload = function() {
+    const startBtn = document.getElementById('start-btn');
+    const currentExercise = document.getElementById('current-exercise-name').innerText.trim();
+
+    if (!currentExercise || currentExercise === 'No exercise selected') {
+        startBtn.disabled = true;
+    } else {
+        startBtn.disabled = false;
+    }
+};
+</script>
+
+</body>
+</html>
