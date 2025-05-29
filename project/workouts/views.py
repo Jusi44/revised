@@ -118,9 +118,29 @@ from .models import WorkoutSession
 
 from datetime import date, timedelta
 from .models import WorkoutSession, UserStreak
+from users.models import Profile 
+
+
+from django.shortcuts import redirect
+
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from .models import WorkoutSession, UserStreak
+from users.models import Profile
+from datetime import date, timedelta
+
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from .models import WorkoutSession, UserStreak
+from users.models import Profile
+from datetime import date, timedelta
 
 @login_required
 def dashboard(request):
+    profile = request.user.profile
+
+    # If the profile is complete, proceed with the dashboard logic
     user = request.user
     history = WorkoutSession.objects.filter(user=user).order_by('-completed_at')
 
@@ -137,18 +157,8 @@ def dashboard(request):
 
     # Current exercise handling
     selected = request.session.get('selected_exercises', [])
-
-    # Safety check in case of out-of-sync data
-    if not isinstance(selected, list):
-        selected = []
-
-    if selected:
-        current_exercise = selected[0]  # Always show the first one as the "current"
-    else:
-        current_exercise = None
+    current_exercise = selected[0] if selected else None
     request.session['selected_exercises'] = []
-
-    request.session['current_exercise_index'] = 0  # Always reset to 0 since we're queueing
 
     # Workout summary stats
     total_workouts = history.count()
@@ -157,11 +167,43 @@ def dashboard(request):
     total_remainder_seconds = total_seconds % 60
 
     def estimate_calories(duration_seconds):
-        MET = 6  # moderate intensity
-        weight_kg = 60  # replace with user's actual weight if available
+        MET = 3.0  # moderate intensity
+        weight_kg = profile.weight or 20  # fallback weight if missing
         return int(MET * 3.5 * weight_kg / 200 * duration_seconds)
 
     total_calories = estimate_calories(total_seconds)
+
+    # Recommended exercises logic based on profile data
+    recommended_exercises = []
+    if profile.sex == 'M':
+        recommended_exercises = [
+        'Push-ups (Beginner)',
+        'Pull-ups (Intermediate)',
+        'Burpees (Intermediate)',
+        'Dips (Intermediate)',
+        'Handstand Hold (Advanced)',
+        'Mountain Climbers (Beginner)',
+        'Plank to Push-up (Intermediate)',
+        'Pike Push-ups (Advanced)',
+        'Jump Squats (Intermediate)',
+        'Chin-ups (Intermediate)'
+    ]
+    elif profile.sex == 'F':
+        recommended_exercises = [
+        'Squats (Beginner)',
+        'Lunges (Beginner)',
+        'Plank (Beginner)',
+        'Glute Bridges (Beginner)',
+        'Wall Sits (Intermediate)',
+        'Step-ups (Beginner)',
+        'Side Plank (Intermediate)',
+        'Donkey Kicks (Beginner)',
+        'Superman Hold (Intermediate)',
+        'High Knees (Beginner)'
+    ]
+
+    else:
+        recommended_exercises = []
 
     context = {
         'user': user,
@@ -173,8 +215,12 @@ def dashboard(request):
         'total_minutes': total_minutes,
         'total_remainder_seconds': total_remainder_seconds,
         'total_calories': total_calories,
+        'recommended_exercises': recommended_exercises,  # Added here
     }
     return render(request, 'workouts/dashboard.html', context)
+
+
+
 
 
 
@@ -406,15 +452,14 @@ def notification_settings(request):
                     fail_silently=False,
                 )
 
-            messages.success(request, "Reminder saved—and a notification has been sent!")
-            return redirect('dashboard')
+            messages.success(request, "Reminder saved—and a notification will be sent according to the time you set!")
 
     else:
         form = NotificationForm(instance=notification)
 
     return render(request, 'workouts/notification_form.html', {
         'form': form,
-        'minute_steps': range(0, 60, 5),
+        'minute_steps': range(0, 60),
     })
 
 

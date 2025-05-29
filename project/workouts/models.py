@@ -3,15 +3,7 @@ from django.contrib.auth.models import User
 from multiselectfield import MultiSelectField
 from django.utils import timezone
 
-DAYS_OF_WEEK = (
-    ('Mon', 'Monday'),
-    ('Tue', 'Tuesday'),
-    ('Wed', 'Wednesday'),
-    ('Thu', 'Thursday'),
-    ('Fri', 'Friday'),
-    ('Sat', 'Saturday'),
-    ('Sun', 'Sunday'),
-)
+
 
 class Exercise(models.Model):
     name = models.CharField(max_length=100)
@@ -83,8 +75,22 @@ class UserStreak(models.Model):
     @property
     def duration_minutes(self):
         return self.duration_seconds // 60
+    
+
+  
 
 class Notification(models.Model):
+
+    DAYS_OF_WEEK = (
+    ('Mon', 'Monday'),
+    ('Tue', 'Tuesday'),
+    ('Wed', 'Wednesday'),
+    ('Thu', 'Thursday'),
+    ('Fri', 'Friday'),
+    ('Sat', 'Saturday'),
+    ('Sun', 'Sunday'),
+    )
+    
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     days = MultiSelectField(choices=DAYS_OF_WEEK)
     time_hour = models.IntegerField(default=8)

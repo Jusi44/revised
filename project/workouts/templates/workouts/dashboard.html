@@ -44,40 +44,67 @@
 
 <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
   <div class="container">
-    <a class="navbar-brand" href="{% url 'dashboard' %}">
-      <i class="bi bi-barbell"></i> FitNotify
+    <a class="navbar-brand text-primary fw-bold" href="{% url 'dashboard' %}">
+      <i class="bi bi-barbell me-1"></i> FitNotify
     </a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-      aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+    <button
+      class="navbar-toggler"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#navbarNav"
+      aria-controls="navbarNav"
+      aria-expanded="false"
+      aria-label="Toggle navigation"
+    >
       <span class="navbar-toggler-icon"></span>
     </button>
 
     <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
       <ul class="navbar-nav align-items-center me-3">
         <li class="nav-item">
-          <a class="nav-link {% if request.path == '/dashboard/' %}active{% endif %} text-primary fw-semibold"
-            href="{% url 'dashboard' %}">Dashboard</a>
+          <a
+            class="nav-link {% if request.path == '/dashboard/' %}active{% endif %} text-primary fw-semibold"
+            href="{% url 'dashboard' %}"
+            >Dashboard</a
+          >
         </li>
         <li class="nav-item">
-          <a class="nav-link {% if request.path == '/exercise/' %}active{% endif %} text-primary fw-semibold"
-            href="{% url 'exercise' %}">Exercise</a>
+          <a
+            class="nav-link {% if request.path == '/exercise/' %}active{% endif %} text-primary fw-semibold"
+            href="{% url 'exercise' %}"
+            >Exercise</a
+          >
         </li>
       </ul>
 
       <div class="dropdown me-3">
-        <button class="btn btn-light dropdown-toggle" type="button" id="dropdownBell" data-bs-toggle="dropdown"
-          aria-expanded="false">
+        <button
+          class="btn btn-light dropdown-toggle"
+          type="button"
+          id="dropdownBell"
+          data-bs-toggle="dropdown"
+          aria-expanded="false"
+        >
           🔔
         </button>
         <ul class="dropdown-menu" aria-labelledby="dropdownBell">
-          <li><a class="dropdown-item" href="{% url 'notification_settings' %}">Set Workout Notification</a></li>
+          <li>
+            <a class="dropdown-item" href="{% url 'notification_settings' %}"
+              >Set Workout Notification</a
+            >
+          </li>
         </ul>
       </div>
 
       {% if user.is_authenticated %}
       <div class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle text-primary fw-semibold" href="#" role="button" data-bs-toggle="dropdown"
-          aria-expanded="false">
+        <a
+          class="nav-link dropdown-toggle text-primary fw-semibold"
+          href="#"
+          role="button"
+          data-bs-toggle="dropdown"
+          aria-expanded="false"
+        >
           <i class="bi bi-person-circle"></i> {{ user.username }}
         </a>
         <ul class="dropdown-menu dropdown-menu-end">
@@ -99,6 +126,7 @@
     </div>
   </div>
 </nav>
+
 
         {% if user.is_authenticated %}
     
@@ -276,6 +304,27 @@
         </ul>
       </div>
     </div>
+
+    <!-- Recommended Exercises below Workout History -->
+<div class="container-fluid px-0">
+  <div class="card shadow-sm mt-3">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0"><i class="bi bi-star-fill me-2"></i> Recommended Exercises</h5>
+    </div>
+    <ul class="list-group list-group-flush" id="recommended-list" style="max-height: 180px; overflow-y:auto;">
+      {% for exercise in recommended_exercises %}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        <a href="#" class="recommended-exercise text-primary" data-exercise="{{ exercise }}">{{ exercise }}</a>
+        <a href="{% url 'exercise' %}" target="_blank" class="text-decoration-none small">exercise page for more information</a>
+      </li>
+      {% empty %}
+      <li class="list-group-item text-muted">No recommendations available.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+
+
 
   </div>
 
