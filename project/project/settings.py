@@ -99,6 +99,11 @@ EMAIL_HOST_USER = 'fitnotify9@gmail.com'
 EMAIL_HOST_PASSWORD = 'fbdf yeso cvdk nyji'  # App password, not your Gmail password!
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+TIME_ZONE = 'Asia/Manila'
+
 # Add this for generating absolute URLs
 SITE_URL = 'http://192.168.1.12:8000'  # or use ngrok URL like 'https://abc123.ngrok.io'
 

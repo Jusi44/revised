@@ -5,6 +5,7 @@ from users import views as user_views
 from django.contrib.auth import views as auth_views
 from django.conf import settings
 from django.conf.urls.static import static
+from django.shortcuts import redirect
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -13,8 +14,7 @@ urlpatterns = [
     path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
     path('register/', user_views.register, name='register'),
     path('', include('workouts.urls')),  # workouts app URLs
-    path('users/', include('users.urls')),  # users app URLs
-
+    path('users/', include('users.urls')),  # users app URL
 ]
 
 if settings.DEBUG:

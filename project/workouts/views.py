@@ -413,54 +413,51 @@ from django.shortcuts import render, redirect
 from .forms import NotificationForm
 from .models import Notification
 
+# workouts/views.py
+from django.shortcuts import render
+from datetime import datetime, timedelta
+import pytz
+from .tasks import send_scheduled_email  # Update import path if needed
+
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from datetime import datetime, timedelta
+import pytz
+from .tasks import send_scheduled_email  # adjust the import based on your project structure
+
 @login_required
-def notification_settings(request):
-    # grab or build their Notification object
-    try:
-        notification = request.user.notification
-    except Notification.DoesNotExist:
-        notification = Notification(user=request.user)
+def schedule_email(request):
+    user = request.user
+    notify_email = getattr(user.profile, 'notify_email', '')
 
-    if request.method == 'POST':
-        form = NotificationForm(request.POST, instance=notification)
-        if form.is_valid():
-            notif = form.save(commit=False)
-            notif.user = request.user
-            notif.save()
-            form.save_m2m()
+    if request.method == "POST":
+        email = request.POST.get("email")
+        time_str = request.POST.get("time")
 
-            # send a one-off test email
-            profile_email = getattr(request.user, 'profile', None) and request.user.profile.notify_email
-            if profile_email:
-                # Create a more detailed message
-                message = (
-                    f"Hi {request.user.username},\n\n"
-                    "⏰ It's time to workout!\n\n"
-                    "Your body will thank you for it. Let's get moving! 💪\n\n"
-                    "Remember, consistency is key to achieving your fitness goals. "
-                    "Every workout counts, and you're one step closer to a healthier you!\n\n"
-                    "Stay motivated and keep pushing your limits!\n\n"
-                    "Best,\n"
-                    "Fitnotify Team"
-                )
+        ph_tz = pytz.timezone("Asia/Manila")
+        target_time = datetime.strptime(time_str, "%H:%M").time()
+        now_ph = datetime.now(ph_tz)
+        scheduled_datetime = datetime.combine(now_ph.date(), target_time)
+        scheduled_datetime = ph_tz.localize(scheduled_datetime)
 
-                send_mail(
-                    subject="⏰ Time to workout!",
-                    message=message,
-                    from_email='Fitnotify <no-reply@fitnotify.com>',
-                    recipient_list=[profile_email],
-                    fail_silently=False,
-                )
+        if scheduled_datetime <= now_ph:
+            scheduled_datetime += timedelta(days=1)
 
-            messages.success(request, "Reminder saved—and a notification will be sent according to the time you set!")
+        send_scheduled_email.apply_async(args=[email], eta=scheduled_datetime)
 
-    else:
-        form = NotificationForm(instance=notification)
+        return render(request, "workouts/schedule_email.html", {
+            "success": True,
+            "prefill_email": email
+        })
 
-    return render(request, 'workouts/notification_form.html', {
-        'form': form,
-        'minute_steps': range(0, 60),
+    return render(request, "workouts/schedule_email.html", {
+        "prefill_email": notify_email
     })
+
+
+
+
+
 
 
 
